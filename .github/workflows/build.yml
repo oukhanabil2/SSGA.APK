@@ -1,4 +1,4 @@
-name: ULTIMATE SGA APK BUILD
+name: DEBUG SGA APK - CAPTURE ERREURS
 
 on:
   workflow_dispatch:
@@ -19,75 +19,54 @@ jobs:
       with:
         python-version: '3.9'
         
-    - name: 🔍 DEBUG - List files
+    - name: 📦 Install Buildozer
       run: |
-        echo "=== STRUCTURE DU PROJET ==="
-        ls -la
-        echo "=== FICHIERS PYTHON ==="
-        ls -la *.py
-        echo "=== BUILD SPEC ==="
-        ls -la *.spec || echo "No spec file"
-        
-    - name: 📦 Install Buildozer and dependencies
-      run: |
-        echo "🚀 Installation de Buildozer..."
         pip install buildozer
         pip install cython==0.29.33
         
-    - name: 🛠️ Install Android dependencies
+    - name: 🛠️ Install system dependencies
       run: |
-        echo "📱 Installation des outils Android..."
         sudo apt-get update
         sudo apt-get install -y \
           git autoconf build-essential \
           libffi-dev libssl-dev \
           python3-pip zip unzip \
           openjdk-11-jdk
-        
-    - name: 🏗️ Build APK (FORCE MODE)
+          
+    - name: 🔍 DEBUG - Test Buildozer
       run: |
-        echo "🏗️ DEBUT DE LA COMPILATION..."
-        echo "Cette étape devrait durer 45-60 minutes"
+        echo "=== TEST BUILDozer ==="
+        buildozer --version || echo "Buildozer non trouvé"
+        which buildozer || echo "Buildozer pas dans PATH"
         
-        # Forcer l'initialisation
+    - name: 🏗️ Build APK with ERROR CAPTURE
+      run: |
+        set -e  # Arrêter à la première erreur
+        set -x  # Afficher toutes les commandes
+        
+        echo "=== INITIALISATION ==="
         buildozer init --force
         
-        # Lancer la compilation avec logs détaillés
-        buildozer -v android debug 2>&1 | tee build.log &
+        echo "=== COMPILATION ANDROID ==="
+        # Forcer l'affichage complet des erreurs
+        buildozer -v android debug || {
+          echo "❌ BUILD FAILED"
+          echo "=== DERNIÈRE ERREUR ==="
+          tail -100 .buildozer/logs/build.log || echo "No build log"
+          exit 1
+        }
         
-        # Attendre et montrer la progression
-        BUILD_PID=$!
-        for i in {1..60}; do
-          if ps -p $BUILD_PID > /dev/null; then
-            echo "⏳ Compilation en cours... ($i/60 minutes)"
-            sleep 60
-          else
-            break
-          fi
-        done
-        
-        # Vérifier le résultat
-        if [ -f bin/*.apk ]; then
-          echo "✅ APK GENERÉ AVEC SUCCÈS!"
-          ls -la bin/
-        else
-          echo "❌ Aucun APK généré"
-          echo "=== DERNIERES LIGNES DU LOG ==="
-          tail -50 build.log || echo "No build log"
-        fi
-        
-    - name: 📱 Upload APK if exists
+    - name: 📱 Upload APK
       if: success()
       uses: actions/upload-artifact@v4
       with:
-        name: SGA-ULTIMATE-APK
+        name: SGA-DEBUG-APK
         path: bin/*.apk
-        retention-days: 30
         
-    - name: 📄 Upload build logs
+    - name: 📄 Upload Build Logs
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: Build-Logs
-        path: build.log
+        name: Buildozer-Logs
+        path: .buildozer/logs/
         retention-days: 7
