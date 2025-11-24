@@ -37,6 +37,15 @@ jobs:
         pip install kivy
         pip install pandas openpyxl xlrd tabulate
         
+    - name: Generate buildozer.spec if missing
+      run: |
+        if [ ! -f buildozer.spec ]; then
+          echo "Generating buildozer.spec..."
+          buildozer init
+        else
+          echo "buildozer.spec already exists"
+        fi
+        
     - name: Build Android APK
       run: |
         buildozer -v android debug
