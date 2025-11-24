@@ -1,4 +1,4 @@
-name: Build SGA APK - GUARANTEED
+name: Build SGA APK - LICENCES ACCEPTÉES
 
 on:
   push:
@@ -45,6 +45,12 @@ jobs:
         else
           echo "buildozer.spec already exists"
         fi
+        
+    - name: Accept Android SDK licenses
+      run: |
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+        yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses
         
     - name: Build Android APK
       run: |
