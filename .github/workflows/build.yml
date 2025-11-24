@@ -1,11 +1,18 @@
-- name: Install Android SDK (Version Simplifiée)
-  run: |
-    mkdir -p $HOME/android-sdk
-    cd $HOME/android-sdk
-    wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-    unzip -q commandlinetools-linux-9477386_latest.zip
-    # Utiliser directement la structure existante
-    mv cmdline-tools cmdline-tools-latest
-    mkdir -p cmdline-tools
-    mv cmdline-tools-latest cmdline-tools/latest
-    rm commandlinetools-linux-9477386_latest.zip
+name: Final SGA APK Attempt
+
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build with Buildozer Docker
+      run: |
+        docker run --rm \
+        -v $(pwd):/src \
+        -v ~/.buildozer:/root/.buildozer \
+        buildozer/buildozer android debug
