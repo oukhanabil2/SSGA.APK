@@ -1,4 +1,4 @@
-.name: Build SGA APK
+name: Build SGA APK
 
 on:
   push:
