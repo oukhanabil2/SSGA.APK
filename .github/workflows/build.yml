@@ -1,21 +1,66 @@
-name: Build APK Simple
-on: [push, pull_request]
+name: Build Android APK
+on: 
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
     
-    - name: Build with Buildozer
-      uses: ArtemSBulgakov/buildozer-action@v1
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
-        work-dir: ./
-        buildozer-version: main
-        target: android debug
+        python-version: '3.9'
         
-    - name: Upload APK
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          python3-pip \
+          git \
+          zip \
+          unzip \
+          openjdk-11-jdk \
+          autoconf \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
+          cmake \
+          libffi-dev \
+          libssl-dev
+
+    - name: Install Buildozer and dependencies
+      run: |
+        pip3 install --upgrade pip
+        pip3 install buildozer
+        pip3 install cython==0.29.33
+        pip3 install kivy
+
+    - name: Configure Buildozer to allow root
+      run: |
+        mkdir -p ~/.buildozer
+        echo "[buildozer]" > ~/.buildozer/config
+        echo "allow_root = true" >> ~/.buildozer/config
+
+    - name: Build APK with Buildozer
+      run: |
+        buildozer android clean
+        buildozer -v android debug
+      env:
+        BUILDOZER_ALLOW_ROOT: 1
+
+    - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: app-apk
+        name: android-apk
         path: bin/*.apk
+        retention-days: 30
