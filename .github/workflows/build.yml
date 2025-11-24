@@ -1,4 +1,4 @@
-name: Build SGA APK - SDK COMPLET
+name: Build SGA APK - SDK CORRIGÉ
 
 on:
   push:
@@ -47,7 +47,7 @@ jobs:
           echo "buildozer.spec already exists"
         fi
         
-    - name: Install Android SDK Command Line Tools
+    - name: Install Android SDK Command Line Tools (CORRIGÉ)
       run: |
         # Créer le dossier SDK Android
         mkdir -p $HOME/android-sdk
@@ -55,9 +55,21 @@ jobs:
         
         # Télécharger les outils en ligne de commande
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-        unzip -q commandlinetools-linux-9477386_latest.zip
-        mkdir -p cmdline-tools/latest
-        mv cmdline-tools/* cmdline-tools/latest/
+        
+        # Extraire dans un dossier temporaire
+        unzip -q commandlinetools-linux-9477386_latest.zip -d temp-cmdline
+        
+        # Créer la structure correcte des dossiers
+        mkdir -p cmdline-tools
+        mv temp-cmdline/cmdline-tools/* cmdline-tools/
+        
+        # Renommer le dossier en 'latest' comme requis
+        mv cmdline-tools cmdline-tools-temp
+        mkdir -p cmdline-tools
+        mv cmdline-tools-temp cmdline-tools/latest
+        
+        # Nettoyer
+        rm -rf temp-cmdline
         rm commandlinetools-linux-9477386_latest.zip
         
         # Configurer les variables d'environnement
