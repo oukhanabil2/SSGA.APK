@@ -1,26 +1,66 @@
-name: Build APK
-on: [push]
+name: Build Android APK
+on: 
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: beevelop/cordova-android
-    
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: Install Buildozer and dependencies
-      run: |
-        apt-get update
-        apt-get install -y python3-pip python3-dev git zip
-        pip3 install buildozer cython==0.29.19
-        
-    - name: Build APK
-      run: |
-        buildozer android debug
-      
-    - name: Upload APK
-      uses: actions/upload-artifact@v2
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
-        name: Android-APK
+        python-version: '3.9'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          python3-pip \
+          git \
+          zip \
+          unzip \
+          openjdk-11-jdk \
+          autoconf \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
+          cmake \
+          libffi-dev \
+          libssl-dev
+
+    - name: Install Buildozer
+      run: |
+        pip3 install --upgrade buildozer
+        pip3 install --upgrade Cython
+
+    - name: Build APK with Buildozer
+      run: |
+        buildozer android clean
+        buildozer -v android debug
+      timeout-minutes: 60
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: android-apk
         path: bin/*.apk
+        retention-days: 7
+
+    - name: Upload build logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-logs
+        path: |
+          .buildozer/
+          buildozer.log
+        retention-days: 7
