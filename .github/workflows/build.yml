@@ -1,21 +1,26 @@
-name: Build Android APK
-on: [push, pull_request]
+name: Build APK
+on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: beevelop/cordova-android
+    
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Build with Buildozer
-      uses: artem-solovev/buildozer-action@v1
-      with:
-        work-dir: ./
-        buildozer-version: stable
-
+    - uses: actions/checkout@v2
+    
+    - name: Install Buildozer and dependencies
+      run: |
+        apt-get update
+        apt-get install -y python3-pip python3-dev git zip
+        pip3 install buildozer cython==0.29.19
+        
+    - name: Build APK
+      run: |
+        buildozer android debug
+      
     - name: Upload APK
       uses: actions/upload-artifact@v2
       with:
-        name: package
+        name: Android-APK
         path: bin/*.apk
