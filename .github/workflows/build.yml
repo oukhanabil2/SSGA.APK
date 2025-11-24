@@ -1,4 +1,4 @@
-name: Build SGA APK - COMPLETE
+name: Build Real SGA APK
 
 on:
   push:
@@ -6,22 +6,35 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
       
-    - name: Build with Buildozer
-      uses: ArtemSBulgakov/buildozer-action@v1.8.0
+    - name: Setup Python
+      uses: actions/setup-python@v4
       with:
-        workdir: .
-        buildozer_version: stable
-        target: android
-        type: debug        pip install xlrd
-        pip install tabulate
+        python-version: '3.9'
         
-    - name: Build Android APK (This will take 30-60 minutes)
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          git autoconf build-essential \
+          libffi-dev libssl-dev \
+          python3-pip zip unzip \
+          openjdk-11-jdk
+          
+    - name: Install Python dependencies
+      run: |
+        pip install buildozer
+        pip install cython
+        pip install kivy
+        pip install pandas openpyxl xlrd tabulate
+        
+    - name: Build Android APK (30-60 minutes)
       run: |
         buildozer init
         buildozer -v android debug
@@ -29,11 +42,6 @@ jobs:
     - name: Upload APK
       uses: actions/upload-artifact@v3
       with:
-        name: SGA-Application
+        name: SGA-Application-APK
         path: bin/*.apk
-        retention-days: 7        
-    - name: Upload APK
-      uses: actions/upload-artifact@v3
-      with:
-        name: SGA-App
-        path: bin/*.apk
+        retention-days: 7
