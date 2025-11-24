@@ -1,10 +1,9 @@
-name: Build APK
+.name: Build SGA APK
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,13 +11,32 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
       
-    - name: Build APK with Builds
-      uses: ArtenSbAlgakov/builds@main
-      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          git autoconf build-essential \
+          libffi-dev libssl-dev \
+          python3-pip zip unzip \
+          openjdk-11-jdk
+          
+    - name: Install Buildozer
+      run: pip install buildozer
+        
+    - name: Build Android APK
+      run: |
+        buildozer init
+        buildozer -v android debug
+        
     - name: Upload APK
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: SGA-App
         path: bin/*.apk
