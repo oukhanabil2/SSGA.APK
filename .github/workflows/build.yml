@@ -1,4 +1,16 @@
-name: Build Android APK
+- name: Diagnostic du projet
+  run: |
+    echo "=== Structure du projet ==="
+    ls -la
+    echo "=== Fichier buildozer.spec ==="
+    if [ -f buildozer.spec ]; then
+      head -20 buildozer.spec
+    else
+      echo "❌ buildozer.spec non trouvé"
+    fi
+    echo "=== Fichiers Python ==="
+    find . -name "*.py" | head -10 
+    name: Build Android APK
 on: 
   push:
     branches: [ main, master ]
