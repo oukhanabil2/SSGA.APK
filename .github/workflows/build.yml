@@ -1,4 +1,4 @@
-name: Build APK with Official Docker
+name: Build APK - Solution Définitive
 on: [push, pull_request]
 
 jobs:
@@ -9,15 +9,31 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build with Official Kivy Docker
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
       run: |
-        docker run --rm \
-          -v $PWD:/home/user/hostcwd \
-          -v buildozer_deps:/home/user/.buildozer \
-          kivy/buildozer android debug
+        sudo apt-get update
+        sudo apt-get install -y \
+          python3-pip \
+          openjdk-11-jdk \
+          zip \
+          unzip
+
+    - name: Install Buildozer
+      run: pip3 install buildozer
+
+    - name: Build APK
+      run: |
+        buildozer init
+        buildozer -v android debug
+      timeout-minutes: 90
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: android-apk
+        name: APK-Final
         path: bin/*.apk
