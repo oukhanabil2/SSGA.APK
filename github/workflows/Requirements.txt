@@ -1,5 +1,0 @@
-kivy
-pandas
-openpyxl
-xlrd
-tabulate
