@@ -1,4 +1,4 @@
-name: DEBUG SGA APK - CAPTURE ERREURS
+name: SGA APK - WITH AIDL FIX
 
 on:
   workflow_dispatch:
@@ -23,50 +23,80 @@ jobs:
       run: |
         pip install buildozer
         pip install cython==0.29.33
+        pip install kivy pandas openpyxl xlrd tabulate
         
-    - name: 🛠️ Install system dependencies
+    - name: 🛠️ Install Android SDK with AIDL
       run: |
+        echo "📱 Installation du SDK Android complet..."
+        
+        # Installer les dépendances système
         sudo apt-get update
         sudo apt-get install -y \
           git autoconf build-essential \
           libffi-dev libssl-dev \
           python3-pip zip unzip \
-          openjdk-11-jdk
-          
-    - name: 🔍 DEBUG - Test Buildozer
-      run: |
-        echo "=== TEST BUILDozer ==="
-        buildozer --version || echo "Buildozer non trouvé"
-        which buildozer || echo "Buildozer pas dans PATH"
+          openjdk-11-jdk \
+          wget
         
-    - name: 🏗️ Build APK with ERROR CAPTURE
-      run: |
-        set -e  # Arrêter à la première erreur
-        set -x  # Afficher toutes les commandes
+        # Créer le dossier SDK
+        mkdir -p $HOME/android-sdk
+        cd $HOME/android-sdk
         
-        echo "=== INITIALISATION ==="
+        # Télécharger les outils en ligne de commande
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+        unzip -q commandlinetools-linux-9477386_latest.zip -d temp-cmdline
+        mkdir -p cmdline-tools
+        mv temp-cmdline/cmdline-tools/* cmdline-tools/
+        mv cmdline-tools cmdline-tools-temp
+        mkdir -p cmdline-tools
+        mv cmdline-tools-temp cmdline-tools/latest
+        rm -rf temp-cmdline commandlinetools-linux-9477386_latest.zip
+        
+        # Configurer l'environnement
+        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+        
+        # Accepter les licences
+        mkdir -p $HOME/.android
+        touch $HOME/.android/repositories.cfg
+        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+        
+        # Installer les composants REQUIS dont AIDL
+        echo "🔧 Installation des build-tools (contient AIDL)..."
+        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+          "platform-tools" \
+          "build-tools;34.0.0" \
+          "platforms;android-33" \
+          "ndk;25.1.8937393"
+        
+        # Vérifier que AIDL est installé
+        echo "✅ Vérification d'AIDL..."
+        find $HOME/android-sdk -name "aidl" -type f | head -5
+        
+    - name: 🔍 Verify AIDL installation
+      run: |
+        echo "=== VÉRIFICATION AIDL ==="
+        find $HOME/android-sdk -name "aidl" -type f | head -5
+        echo "=== BUILD-TOOLS ==="
+        ls -la $HOME/android-sdk/build-tools/ || echo "No build-tools directory"
+        
+    - name: 🏗️ Build APK
+      run: |
+        echo "🏗️ Début de la compilation APK..."
         buildozer init --force
-        
-        echo "=== COMPILATION ANDROID ==="
-        # Forcer l'affichage complet des erreurs
-        buildozer -v android debug || {
-          echo "❌ BUILD FAILED"
-          echo "=== DERNIÈRE ERREUR ==="
-          tail -100 .buildozer/logs/build.log || echo "No build log"
-          exit 1
-        }
+        buildozer -v android debug
         
     - name: 📱 Upload APK
       if: success()
       uses: actions/upload-artifact@v4
       with:
-        name: SGA-DEBUG-APK
+        name: SGA-APK-FINAL
         path: bin/*.apk
         
     - name: 📄 Upload Build Logs
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: Buildozer-Logs
-        path: .buildozer/logs/
-        retention-days: 7
+        name: Build-Logs
+        path: .buildozer/
