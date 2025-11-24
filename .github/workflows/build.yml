@@ -1,8 +1,21 @@
-- name: 🛠️ Install Specific Android Tools
-  run: |
-    # Installer des versions spécifiques compatibles
-    $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
-      "platform-tools" \
-      "build-tools;33.0.2" \
-      "platforms;android-33" \
-      "ndk;25.1.8937393"
+name: Build Android APK
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Build with Buildozer
+      uses: artem-solovev/buildozer-action@v1
+      with:
+        work-dir: ./
+        buildozer-version: stable
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v2
+      with:
+        name: package
+        path: bin/*.apk
